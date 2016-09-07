@@ -8,6 +8,7 @@ ENV HADOOP_VERSION	2.7.3
 ENV HADOOP_HOME		/opt/hadoop
 ENV HADOOP_OPTS		-Djava.library.path=/opt/hadoop/lib/native
 ENV PATH		$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+
 RUN apk add --update --no-cache openssl ca-certificates bash && \
     update-ca-certificates && \
     wget -q https://archive.apache.org/dist/hadoop/core/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz && \
