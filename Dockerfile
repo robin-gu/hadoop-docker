@@ -1,35 +1,34 @@
-FROM openjdk:8-jdk-alpine
+FROM openjdk:8-jdk-buster
 
 ####################
 # HADOOP
 ####################
 
-ENV HADOOP_VERSION	2.7.3
-ENV HADOOP_HOME		/opt/hadoop
+ENV HADOOP_VERSION	3.2.2
+ENV HIVE_VERSION	3.1.2
+
+ENV HADOOP_HOME=/opt/hadoop-$HADOOP_VERSION
+ENV HIVE_HOME=/opt/apache-hive-$HIVE_VERSION-bin
+
 ENV HADOOP_OPTS		-Djava.library.path=/opt/hadoop/lib/native
 ENV PATH		$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
 
-RUN apk add --update --no-cache openssl ca-certificates bash && \
-    update-ca-certificates && \
-    wget -q https://archive.apache.org/dist/hadoop/core/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz && \
-    tar -zxf /hadoop-$HADOOP_VERSION.tar.gz && \
-    rm /hadoop-$HADOOP_VERSION.tar.gz && \
-    mkdir -p /opt && \
-    mv hadoop-$HADOOP_VERSION /opt/hadoop && \
-    mkdir -p /opt/hadoop/logs
+WORKDIR /opt
+
+RUN apt-get update && \
+    apt-get -qqy install curl wget && \
+    curl -L https://www-us.apache.org/dist/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz | tar zxf - && \
+    curl -L https://www-us.apache.org/dist/hadoop/common/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz | tar zxf - && \
+    apt-get install --only-upgrade openssl libssl1.1 && \
+    apt-get install -y libk5crypto3 libkrb5-3 libsqlite3-0 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN wget https://github.com/tencentyun/hadoop-cos/releases/download/v5.9.3/hadoop-cos-3.1.0-5.9.3.jar -O $HADOOP_HOME/share/hadoop/tools/lib/hadoop-cos-3.1.0-5.9.3.jar && \
+    wget https://github.com/tencentyun/hadoop-cos/releases/download/v5.9.3/cos_api-bundle-5.6.35.jar -O $HADOOP_HOME/share/hadoop/tools/lib/cos_api-bundle-5.6.35.jar && \
+    wget https://jdbc.postgresql.org/download/postgresql-42.2.19.jar -O $HIVE_HOME/lib/postgresql-jdbc.jar 
 
 # Overwrite default HADOOP configuration files with our config files
 COPY conf  $HADOOP_HOME/etc/hadoop/
-
-# Formatting HDFS
-RUN mkdir -p /data/dfs/data /data/dfs/name /data/dfs/namesecondary && \
-    hdfs namenode -format
-VOLUME /data
-
-
-# Helper script for starting YARN
-ADD start-yarn.sh /usr/local/bin/start-yarn.sh
-
 
 ####################
 # PORTS
